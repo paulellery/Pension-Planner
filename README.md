@@ -15,7 +15,7 @@ Before a pension's access age it is locked: it keeps growing, but nothing is dra
 
 The page has four tabs: **Details** (everything above), **Income** (income each year), **Total** (total in pots) and **Table** (year by year).
 
-The Income, Total and Table tabs share a **What if** panel for trying changes without editing your details:
+The Income, Total and Table tabs share a collapsible **What if** panel (closed by default, with a badge showing how many changes are active) for trying changes without editing your details:
 
 - **Target income** for the first age band.
 - **% change to monthly payments in**, applied to every pot.

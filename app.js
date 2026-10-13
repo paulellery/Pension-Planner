@@ -118,7 +118,11 @@
       `${money(monthly(shown))}/month in total` + (state.whatIf.contribPct !== null ? ` (plan: ${money(monthly(state))})` : '');
     document.getElementById('wRetireName').textContent = p1.name || 'First person';
     document.getElementById('wRetirePlan').textContent = `Plan: ${plan.retireAge}`;
-    document.getElementById('whatifReset').hidden = !hasWhatIf();
+    const changes = Object.values(state.whatIf).filter((v) => v !== null).length;
+    document.getElementById('whatifReset').hidden = !changes;
+    const count = document.getElementById('whatifCount');
+    count.hidden = !changes;
+    count.textContent = changes === 1 ? '1 change' : `${changes} changes`;
   }
 
   document.getElementById('whatifReset').addEventListener('click', () => {

@@ -28,12 +28,15 @@
     </nav>
 
     <div id="resultsHead" class="results-head">
-      <section class="panel whatif" id="whatif">
-        <div class="whatif-top">
+      <details class="panel whatif" id="whatif">
+        <summary>
           <h2>What if…</h2>
+          <span class="whatif-count" id="whatifCount" hidden></span>
+        </summary>
+        <div class="whatif-top">
+          <p class="hint">Try changes here without touching your details. They apply to the Income, Total and Table views.</p>
           <button type="button" id="whatifReset" hidden>Back to my plan</button>
         </div>
-        <p class="hint">Try changes here without touching your details. They apply to the Income, Total and Table views.</p>
         <div class="whatif-fields">
           <label><span>Target income £/yr <span id="wTargetFrom"></span></span>
             <input type="number" data-w="target" inputmode="decimal" step="1000" min="0">
@@ -45,7 +48,7 @@
             <input type="number" data-w="retireAge" inputmode="decimal" step="1">
             <span class="plan" id="wRetirePlan"></span></label>
         </div>
-      </section>
+      </details>
 
       <section id="summary" class="summary" aria-live="polite"></section>
     </div>
