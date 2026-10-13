@@ -16,9 +16,9 @@
         { id: b, name: 'Sam', age: 48, retireAge: 60, statePension: 12548, statePensionAge: 67 },
       ],
       pots: [
-        { id: uid(), name: 'Workplace pension', ownerId: a, balance: 150000, monthly: 500, growth: 5 },
-        { id: uid(), name: 'SIPP', ownerId: b, balance: 60000, monthly: 250, growth: 5 },
-        { id: uid(), name: 'ISA', ownerId: a, balance: 20000, monthly: 200, growth: 4 },
+        { id: uid(), name: 'Workplace pension', ownerId: a, balance: 150000, monthly: 500, growth: 5, accessAge: 57 },
+        { id: uid(), name: 'SIPP', ownerId: b, balance: 60000, monthly: 250, growth: 5, accessAge: 57 },
+        { id: uid(), name: 'ISA', ownerId: a, balance: 20000, monthly: 200, growth: 4, accessAge: '' },
       ],
       db: [{ id: uid(), name: 'Final salary scheme', ownerId: b, annual: 8000, startAge: 65 }],
       drawdown: [
@@ -161,6 +161,7 @@
       ['balance', 'number', 'Current value £'],
       ['monthly', 'number', 'Paying in £/month'],
       ['growth', 'number', 'Growth %/yr'],
+      ['accessAge', 'number', 'Access from age'],
     ],
     db: [
       ['name', 'text', 'Scheme'],
@@ -176,7 +177,7 @@
 
   const BLANK = {
     people: () => ({ name: 'Person ' + (state.people.length + 1), age: 50, retireAge: 65, statePension: 12548, statePensionAge: 67 }),
-    pots: () => ({ name: 'New pot', ownerId: state.people[0].id, balance: 0, monthly: 0, growth: 5 }),
+    pots: () => ({ name: 'New pot', ownerId: state.people[0].id, balance: 0, monthly: 0, growth: 5, accessAge: 57 }),
     db: () => ({ name: 'DB pension', ownerId: state.people[0].id, annual: 0, startAge: 65 }),
     drawdown: () => {
       const last = state.drawdown[state.drawdown.length - 1];
@@ -288,28 +289,31 @@
 
   function renderResults() {
     const shown = withWhatIf(state);
-    const { rows, runOut } = simulate(shown);
+    const { rows, runOut, gap } = simulate(shown);
     const plan = hasWhatIf() ? simulate(state) : null;
     renderWhatIf();
-    renderSummary(shown, rows, runOut, plan);
+    renderSummary(shown, rows, runOut, gap, plan);
     renderIncomeChart(rows, runOut);
     renderPotChart(rows, runOut, plan && plan.rows);
     renderTable(rows);
   }
 
-  function headlines(data, rows, runOut) {
+  const gapText = (g) => (g.fromAge === g.toAge ? `Age ${g.fromAge}` : `Ages ${g.fromAge}–${g.toAge}`);
+
+  function headlines(data, rows, runOut, gap) {
     const retireRow = rows.find((r) => r.age >= num(data.people[0].retireAge)) || rows[0];
     const last = rows[rows.length - 1];
     const firstDraw = rows.find((r) => r.target !== null || r.withdrawn > 0);
     return {
       runOut: runOut ? `Age ${runOut.age}` : 'Never',
+      gap: gap ? gapText(gap) : 'None',
       retire: `${money(retireRow.startTotal)} at ${retireRow.age}`,
       firstIncome: firstDraw ? `${money(firstDraw.income)} at ${firstDraw.age}` : '—',
       left: money(last.endTotal),
     };
   }
 
-  function renderSummary(data, rows, runOut, plan) {
+  function renderSummary(data, rows, runOut, gap, plan) {
     const p1 = data.people[0];
     const el = document.getElementById('summary');
     if (!rows.length) { el.innerHTML = ''; return; }
@@ -319,8 +323,8 @@
     const firstDraw = rows.find((r) => r.target !== null || r.withdrawn > 0);
 
     // With a what-if, note the plan's figure under any card that changed.
-    const now = headlines(data, rows, runOut);
-    const was = plan && plan.rows.length ? headlines(state, plan.rows, plan.runOut) : null;
+    const now = headlines(data, rows, runOut, gap);
+    const was = plan && plan.rows.length ? headlines(state, plan.rows, plan.runOut, plan.gap) : null;
     const planNote = (k) => (was && was[k] !== now[k] ? `<div class="note was">Plan: ${was[k]}</div>` : '');
 
     const runOutCard = runOut
@@ -331,7 +335,15 @@
            <div class="value">Never</div>
            <div class="note">Pots last beyond age ${last.age}, with ${money(last.endTotal)} left.</div>${planNote('runOut')}</div>`;
 
-    el.innerHTML = runOutCard + `
+    const gapCard = gap || (was && was.gap !== 'None')
+      ? `<div class="card${gap ? ' bad' : ' good'}"><div class="label">Gap before pensions open</div>
+           <div class="value">${gap ? gapText(gap) : 'None'}</div>
+           <div class="note">${gap
+             ? `Not enough in accessible pots (like ISAs) to reach the target until the pensions can be drawn — short by ${money(gap.total)} in total.`
+             : 'Accessible pots cover the target until the pensions open.'}</div>${planNote('gap')}</div>`
+      : '';
+
+    el.innerHTML = runOutCard + gapCard + `
       <div class="card"><div class="label">Pots at ${esc(p1.name)}'s retirement (age ${retireRow.age})</div>
         <div class="value">${money(potsAtRetire)}</div>${planNote('retire')}</div>
       <div class="card"><div class="label">Income in first retirement year</div>
@@ -424,15 +436,16 @@
 
   function renderTable(rows) {
     const others = state.people.slice(1);
+    const lockedCol = rows.some((r) => r.locked > 0.5);
     const head = `<tr><th>${esc(state.people[0].name)} age</th>${others.map((p) => `<th>${esc(p.name)}</th>`).join('')}
       <th>Year</th><th>Paid in</th><th>Growth</th><th>State pension</th><th>DB pensions</th><th>From pots</th>
-      <th>Total income</th><th>Target</th><th>Shortfall</th><th>Pots at year end</th></tr>`;
+      <th>Total income</th><th>Target</th><th>Shortfall</th><th>Pots at year end</th>${lockedCol ? '<th>Not yet accessible</th>' : ''}</tr>`;
     const body = rows.map((r) => `<tr class="${r.shortfall ? 'short' : ''}">
       <td>${r.age}</td>${r.ages.slice(1).map((a) => `<td>${a}</td>`).join('')}
       <td>${r.year}</td><td>${money(r.contributions)}</td><td>${money(r.growth)}</td>
       <td>${money(r.statePension)}</td><td>${money(r.dbIncome)}</td><td>${money(r.withdrawn)}</td>
       <td>${money(r.income)}</td><td>${r.target !== null ? money(r.target) : '—'}</td>
-      <td class="shortfall">${r.shortfall ? money(r.shortfall) : ''}</td><td>${money(r.endTotal)}</td></tr>`).join('');
+      <td class="shortfall">${r.shortfall ? money(r.shortfall) : ''}</td><td>${money(r.endTotal)}</td>${lockedCol ? `<td>${r.locked > 0.5 ? money(r.locked) : ''}</td>` : ''}</tr>`).join('');
     document.getElementById('table').innerHTML = `<thead>${head}</thead><tbody>${body}</tbody>`;
   }
 

@@ -24,6 +24,8 @@
       growth: num(p.growth) / 100,
       monthly: num(p.monthly),
       bal: Math.max(0, num(p.balance)),
+      // Owner's age when it can first be drawn from. Blank (ISAs, savings) means any time.
+      accessAge: num(p.accessAge, -Infinity),
     }));
     const dbs = (data.db || []).map((d) => ({
       owner: findPerson(d.ownerId),
@@ -37,6 +39,7 @@
 
     const rows = [];
     let runOut = null;
+    let gap = null;
 
     for (let y = 0; y <= years; y++) {
       const age = startAge + y;
@@ -55,11 +58,15 @@
       // Contributions stop when the pot's owner retires.
       let contributions = 0;
       let startTotal = 0;
+      let available = 0;
       for (const p of pots) {
         p.c = ageOf(p.owner) < num(p.owner.retireAge, Infinity) ? p.monthly * 12 : 0;
+        p.open = ageOf(p.owner) >= p.accessAge;
         contributions += p.c;
         startTotal += p.bal;
+        if (p.open) available += p.bal + p.c;
       }
+      const locked = startTotal + contributions - available;
 
       // Target income: the band that applies at person 1's age this year.
       // Pots only need to cover what the State and DB pensions don't.
@@ -68,14 +75,13 @@
       const target = band ? num(band.value) : null;
       const need = band ? Math.max(0, target - guaranteed) : 0;
 
-      const available = startTotal + contributions;
       const withdrawn = Math.min(need, available);
 
-      // Withdraw proportionally across pots; flows happen mid-year so earn half a year's growth.
+      // Withdraw proportionally across the pots that can be accessed; flows happen mid-year so earn half a year's growth.
       let growth = 0;
       let endTotal = 0;
       for (const p of pots) {
-        const share = available > 0 ? (p.bal + p.c) / available : 0;
+        const share = p.open && available > 0 ? (p.bal + p.c) / available : 0;
         const net = p.c - withdrawn * share;
         const g = (p.bal + net / 2) * p.growth;
         p.bal = Math.max(0, p.bal + net + g);
@@ -84,7 +90,14 @@
       }
 
       const shortfall = need - withdrawn;
-      if (shortfall > 0.5 && !runOut) runOut = { year: startYear + y, age, shortfall };
+      // A shortfall while money is still locked in pensions is a bridge gap, not running out.
+      if (shortfall > 0.5 && locked > 0.5 && !runOut) {
+        if (!gap) gap = { fromAge: age, toAge: age, year: startYear + y, total: 0 };
+        gap.toAge = age;
+        gap.total += shortfall;
+      } else if (shortfall > 0.5 && !runOut) {
+        runOut = { year: startYear + y, age, shortfall };
+      }
 
       rows.push({
         year: startYear + y,
@@ -100,10 +113,11 @@
         shortfall: shortfall > 0.5 ? shortfall : 0,
         startTotal,
         endTotal,
+        locked,
       });
     }
 
-    return { rows, runOut, startYear };
+    return { rows, runOut, gap, startYear };
   }
 
   const api = { simulate, num };

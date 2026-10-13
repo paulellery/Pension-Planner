@@ -5,11 +5,13 @@ A single-page retirement planner that runs entirely in the browser. Open `index.
 It models:
 
 - **Multiple people**, each with a current age, a retirement age and a State Pension (amount and start age).
-- **Multiple pots** (pensions, ISAs, savings), each with an owner, a current value, monthly payments in (which stop at the owner's retirement age) and its own growth rate.
+- **Multiple pots** (pensions, ISAs, savings), each with an owner, a current value, monthly payments in (which stop at the owner's retirement age), its own growth rate and an **access age**: the owner's age when it can first be drawn from. Leave the access age blank for ISAs and savings, which can be drawn from any time.
 - **Defined benefit pensions**, each paying a fixed amount a year from the owner's chosen age.
 - **Target household income by age band**, keyed on the first person's age. State and defined benefit pensions count towards the target first, and the pots are drawn down only for the rest.
 
 It shows when the money runs out: the first year the pots can't make up the gap to the target income.
+
+Before a pension's access age it is locked: it keeps growing, but nothing is drawn from it. ISAs and savings bridge the years until then. If they can't cover the target while money is still locked, the summary shows a **gap before pensions open** separately from the money running out.
 
 The page has four tabs: **Details** (everything above), **Income** (income each year), **Total** (total in pots) and **Table** (year by year).
 
@@ -25,6 +27,6 @@ Assumptions:
 
 - Everything is in today's money, so inflation is ignored and growth rates should be real (above inflation).
 - Tax is ignored.
-- It steps through the years annually. Payments in and withdrawals happen mid-year, and withdrawals are taken from each pot in proportion to its size.
+- It steps through the years annually. Payments in and withdrawals happen mid-year, and withdrawals are taken from each accessible pot in proportion to its size.
 
 Data is saved to `localStorage` in the browser. Use **Export** and **Import** to back it up or move it to another device.
