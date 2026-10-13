@@ -27,7 +27,12 @@
         { id: uid(), fromAge: 85, value: 38000 },
       ],
       settings: { endAge: 100 },
+      whatIf: noWhatIf(),
     };
+  }
+
+  function noWhatIf() {
+    return { target: null, contribPct: null, retireAge: null };
   }
 
   function load() {
@@ -44,11 +49,101 @@
     const out = example();
     for (const k of ['people', 'pots', 'db', 'drawdown']) if (Array.isArray(d[k])) out[k] = d[k];
     if (d.settings) out.settings = { ...out.settings, ...d.settings };
+    out.whatIf = { ...noWhatIf(), ...d.whatIf };
     if (!out.people.length) out.people = example().people.slice(0, 1);
     return out;
   }
 
   let state = load();
+
+  // ---- What if -----------------------------------------------------------
+  // Temporary overrides on top of the saved details, applied to a copy.
+
+  function firstBand(list) {
+    return list
+      .filter((b) => b.fromAge !== '' && b.fromAge !== undefined)
+      .reduce((min, b) => (!min || num(b.fromAge) < num(min.fromAge) ? b : min), null);
+  }
+
+  function hasWhatIf() {
+    return Object.values(state.whatIf).some((v) => v !== null);
+  }
+
+  function withWhatIf(base) {
+    const w = base.whatIf;
+    const s = JSON.parse(JSON.stringify(base));
+    const band = firstBand(s.drawdown);
+    if (w.contribPct !== null) {
+      for (const p of s.pots) p.monthly = Math.max(0, num(p.monthly) * (1 + w.contribPct / 100));
+    }
+    if (w.target !== null && band) band.value = w.target;
+    if (w.retireAge !== null) {
+      // The first target income band moves with retirement, keeping any gap between them.
+      const shift = w.retireAge - num(s.people[0].retireAge);
+      s.people[0].retireAge = w.retireAge;
+      if (band && shift) {
+        band.fromAge = num(band.fromAge) + shift;
+        s.drawdown = s.drawdown.filter((b) => b === band || num(b.fromAge) > band.fromAge);
+      }
+    }
+    return s;
+  }
+
+  function planValues() {
+    const band = firstBand(state.drawdown);
+    return {
+      target: band ? num(band.value) : null,
+      contribPct: 0,
+      retireAge: num(state.people[0].retireAge),
+      band,
+    };
+  }
+
+  function renderWhatIf() {
+    const plan = planValues();
+    const shown = withWhatIf(state);
+    const p1 = state.people[0];
+    const monthly = (d) => d.pots.reduce((t, p) => t + num(p.monthly), 0);
+    const shownBand = firstBand(shown.drawdown);
+
+    for (const el of document.querySelectorAll('[data-w]')) {
+      const k = el.dataset.w;
+      if (document.activeElement !== el) el.value = state.whatIf[k] ?? plan[k] ?? '';
+      el.closest('label').classList.toggle('changed', state.whatIf[k] !== null);
+    }
+    document.querySelector('[data-w="target"]').disabled = !plan.band;
+    document.getElementById('wTargetFrom').textContent = shownBand ? `(from age ${num(shownBand.fromAge)})` : '';
+    document.getElementById('wTargetPlan').textContent = plan.band ? `Plan: ${money(plan.target)}` : 'Add a target income in Details first';
+    document.getElementById('wContribPlan').textContent =
+      `${money(monthly(shown))}/month in total` + (state.whatIf.contribPct !== null ? ` (plan: ${money(monthly(state))})` : '');
+    document.getElementById('wRetireName').textContent = p1.name || 'First person';
+    document.getElementById('wRetirePlan').textContent = `Plan: ${plan.retireAge}`;
+    document.getElementById('whatifReset').hidden = !hasWhatIf();
+  }
+
+  document.getElementById('whatifReset').addEventListener('click', () => {
+    state.whatIf = noWhatIf();
+    save();
+    renderResults();
+  });
+
+  // ---- Tabs --------------------------------------------------------------
+
+  const TABS = ['details', 'income', 'total', 'table'];
+
+  function showTab(tab) {
+    if (!TABS.includes(tab)) tab = 'details';
+    for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', b.dataset.tab === tab);
+    for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== tab;
+    document.getElementById('resultsHead').hidden = tab === 'details';
+  }
+
+  document.querySelector('.tabs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tab]');
+    if (!b) return;
+    history.replaceState(null, '', '#' + b.dataset.tab);
+    showTab(b.dataset.tab);
+  });
 
   // ---- Forms -------------------------------------------------------------
 
@@ -128,6 +223,11 @@
     const el = e.target;
     if (el.id === 'endAge') {
       state.settings.endAge = el.value;
+    } else if (el.dataset.w) {
+      const k = el.dataset.w;
+      const v = parseFloat(el.value);
+      // Blank or back to the plan's value means no change.
+      state.whatIf[k] = Number.isFinite(v) && v !== planValues()[k] ? v : null;
     } else if (el.dataset.col) {
       const item = state[el.dataset.col][el.dataset.i];
       item[el.dataset.f] = el.type === 'number' ? (el.value === '' ? '' : parseFloat(el.value)) : el.value;
@@ -187,15 +287,30 @@
   // ---- Results -----------------------------------------------------------
 
   function renderResults() {
-    const { rows, runOut } = simulate(state);
-    renderSummary(rows, runOut);
+    const shown = withWhatIf(state);
+    const { rows, runOut } = simulate(shown);
+    const plan = hasWhatIf() ? simulate(state) : null;
+    renderWhatIf();
+    renderSummary(shown, rows, runOut, plan);
     renderIncomeChart(rows, runOut);
-    renderPotChart(rows, runOut);
+    renderPotChart(rows, runOut, plan && plan.rows);
     renderTable(rows);
   }
 
-  function renderSummary(rows, runOut) {
-    const p1 = state.people[0];
+  function headlines(data, rows, runOut) {
+    const retireRow = rows.find((r) => r.age >= num(data.people[0].retireAge)) || rows[0];
+    const last = rows[rows.length - 1];
+    const firstDraw = rows.find((r) => r.target !== null || r.withdrawn > 0);
+    return {
+      runOut: runOut ? `Age ${runOut.age}` : 'Never',
+      retire: `${money(retireRow.startTotal)} at ${retireRow.age}`,
+      firstIncome: firstDraw ? `${money(firstDraw.income)} at ${firstDraw.age}` : '—',
+      left: money(last.endTotal),
+    };
+  }
+
+  function renderSummary(data, rows, runOut, plan) {
+    const p1 = data.people[0];
     const el = document.getElementById('summary');
     if (!rows.length) { el.innerHTML = ''; return; }
     const retireRow = rows.find((r) => r.age >= num(p1.retireAge)) || rows[0];
@@ -203,22 +318,27 @@
     const last = rows[rows.length - 1];
     const firstDraw = rows.find((r) => r.target !== null || r.withdrawn > 0);
 
+    // With a what-if, note the plan's figure under any card that changed.
+    const now = headlines(data, rows, runOut);
+    const was = plan && plan.rows.length ? headlines(state, plan.rows, plan.runOut) : null;
+    const planNote = (k) => (was && was[k] !== now[k] ? `<div class="note was">Plan: ${was[k]}</div>` : '');
+
     const runOutCard = runOut
       ? `<div class="card bad"><div class="label">Money runs out</div>
            <div class="value">Age ${runOut.age} (${runOut.year})</div>
-           <div class="note">${esc(p1.name)}'s age. From then, income drops to the guaranteed pensions — short by ${money(runOut.shortfall)} that year.</div></div>`
+           <div class="note">${esc(p1.name)}'s age. From then, income drops to the guaranteed pensions — short by ${money(runOut.shortfall)} that year.</div>${planNote('runOut')}</div>`
       : `<div class="card good"><div class="label">Money runs out</div>
            <div class="value">Never</div>
-           <div class="note">Pots last beyond age ${last.age}, with ${money(last.endTotal)} left.</div></div>`;
+           <div class="note">Pots last beyond age ${last.age}, with ${money(last.endTotal)} left.</div>${planNote('runOut')}</div>`;
 
     el.innerHTML = runOutCard + `
       <div class="card"><div class="label">Pots at ${esc(p1.name)}'s retirement (age ${retireRow.age})</div>
-        <div class="value">${money(potsAtRetire)}</div></div>
+        <div class="value">${money(potsAtRetire)}</div>${planNote('retire')}</div>
       <div class="card"><div class="label">Income in first retirement year</div>
         <div class="value">${firstDraw ? money(firstDraw.income) : '—'}</div>
-        <div class="note">${firstDraw ? 'At age ' + firstDraw.age : 'No target income set'}</div></div>
+        <div class="note">${firstDraw ? 'At age ' + firstDraw.age : 'No target income set'}</div>${planNote('firstIncome')}</div>
       <div class="card"><div class="label">Left in pots at age ${last.age}</div>
-        <div class="value">${money(last.endTotal)}</div></div>`;
+        <div class="value">${money(last.endTotal)}</div>${planNote('left')}</div>`;
   }
 
   const W = 900, H = 280, M = { t: 12, r: 12, b: 28, l: 64 };
@@ -286,16 +406,19 @@
     });
   }
 
-  function renderPotChart(rows, runOut) {
+  function renderPotChart(rows, runOut, planRows) {
     const el = document.getElementById('potChart');
-    const max = niceMax(Math.max(0, ...rows.map((r) => Math.max(r.startTotal, r.endTotal))));
+    const all = planRows ? rows.concat(planRows) : rows;
+    const max = niceMax(Math.max(0, ...all.map((r) => Math.max(r.startTotal, r.endTotal))));
+    document.getElementById('potLegend').hidden = !planRows;
     el.innerHTML = frame(rows, max, runOut, ({ x, y, step }) => {
       if (!rows.length) return '';
-      const pts = rows.map((r, i) => `${x(i) + step / 2},${y(r.endTotal)}`);
-      const line = 'M' + pts.join('L');
+      const path = (list) => 'M' + list.map((r, i) => `${x(i) + step / 2},${y(r.endTotal)}`).join('L');
+      const line = path(rows);
+      const planLine = planRows ? `<path class="plan-line" d="${path(planRows)}"/>` : '';
       const area = `${line}L${x(rows.length - 1) + step / 2},${y(0)}L${x(0) + step / 2},${y(0)}Z`;
       const tips = rows.map((r, i) => `<rect x="${x(i)}" width="${step}" y="${M.t}" height="${H - M.t - M.b}" fill="transparent"><title>Age ${r.age} (${r.year}): ${money(r.endTotal)}</title></rect>`).join('');
-      return `<path class="area" d="${area}"/><path class="line" d="${line}"/>${tips}`;
+      return `<path class="area" d="${area}"/>${planLine}<path class="line" d="${line}"/>${tips}`;
     });
   }
 
@@ -315,4 +438,5 @@
 
   renderForms();
   renderResults();
+  showTab(location.hash.slice(1));
 })();

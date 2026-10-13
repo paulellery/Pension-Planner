@@ -11,6 +11,16 @@ It models:
 
 It shows when the money runs out: the first year the pots can't make up the gap to the target income.
 
+The page has four tabs: **Details** (everything above), **Income** (income each year), **Total** (total in pots) and **Table** (year by year).
+
+The Income, Total and Table tabs share a **What if** panel for trying changes without editing your details:
+
+- **Target income** for the first age band.
+- **% change to monthly payments in**, applied to every pot.
+- **Retirement age** of the first person. The first target income band moves by the same number of years.
+
+The summary cards show the plan's figure under anything the what-if changes, and the Total chart draws the plan as a dashed line. **Back to my plan** clears the changes.
+
 Assumptions:
 
 - Everything is in today's money, so inflation is ignored and growth rates should be real (above inflation).
