@@ -10,7 +10,7 @@
   <header class="top">
     <div>
       <h1>Pension Planner</h1>
-      <p class="sub">All figures in today's money. Inflation and tax are ignored. Your data stays in this browser.</p>
+      <p class="sub">All figures in today's money. Income tax uses 2025/26 bands (England, Wales &amp; NI). Your data stays in this browser.</p>
     </div>
     <div class="actions">
       <button type="button" id="export">Export</button>
@@ -38,7 +38,7 @@
           <button type="button" id="whatifReset" hidden>Back to my plan</button>
         </div>
         <div class="whatif-fields">
-          <label><span>Target income £/yr <span id="wTargetFrom"></span></span>
+          <label><span>Target income after tax £/yr <span id="wTargetFrom"></span></span>
             <input type="number" data-w="target" inputmode="decimal" step="1000" min="0">
             <span class="plan" id="wTargetPlan"></span></label>
           <label><span>Change to monthly pension payments %</span>
@@ -64,7 +64,7 @@
 
         <section class="panel">
           <h2>Target income</h2>
-          <p class="hint">Total household income you want each year from each age. State and defined benefit pensions count towards it first; pensions and ISAs are drawn down to make up the rest.</p>
+          <p class="hint">Total household income you want each year <b>after tax</b>, from each age. State and defined benefit pensions count towards it first; pensions and ISAs are drawn down to make up the rest, using each person's tax-free allowance first.</p>
           <div id="drawdown" class="items"></div>
           <button type="button" class="add" data-add="drawdown">+ Add age band</button>
         </section>
@@ -105,7 +105,8 @@
         <span><i class="sw db"></i>Defined benefit</span>
         <span><i class="sw pots"></i>From pensions</span>
         <span><i class="sw isa"></i>From ISAs</span>
-        <span><i class="sw target"></i>Target income</span>
+        <span><i class="sw tax"></i>Income tax</span>
+        <span><i class="sw target"></i>Target income after tax</span>
       </div>
       <div id="incomeChart" class="chart"></div>
     </section>

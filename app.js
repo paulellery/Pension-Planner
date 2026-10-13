@@ -190,7 +190,7 @@
     ],
     drawdown: [
       ['fromAge', 'number', 'From age'],
-      ['value', 'number', 'Target income £/yr'],
+      ['value', 'number', 'After tax £/yr'],
     ],
   };
 
@@ -330,6 +330,7 @@
       retire: `${money(retireRow.startTotal)} at ${retireRow.age}`,
       firstIncome: firstDraw ? `${money(firstDraw.income)} at ${firstDraw.age}` : '—',
       left: money(last.endTotal),
+      tax: money(rows.reduce((t, r) => t + r.tax, 0)),
     };
   }
 
@@ -368,9 +369,11 @@
       <div class="card"><div class="label">Pots at ${esc(p1.name)}'s retirement (age ${retireRow.age})</div>
         <div class="value">${money(potsAtRetire)}</div>
         <div class="note">${money(retireRow.startTotal - retireIsas)} pensions, ${money(retireIsas)} ISAs</div>${planNote('retire')}</div>
-      <div class="card"><div class="label">Income in first retirement year</div>
+      <div class="card"><div class="label">Income after tax in first retirement year</div>
         <div class="value">${firstDraw ? money(firstDraw.income) : '—'}</div>
-        <div class="note">${firstDraw ? 'At age ' + firstDraw.age : 'No target income set'}</div>${planNote('firstIncome')}</div>
+        <div class="note">${firstDraw ? `At age ${firstDraw.age}, after ${money(firstDraw.tax)} tax` : 'No target income set'}</div>${planNote('firstIncome')}</div>
+      <div class="card"><div class="label">Income tax to age ${last.age}</div>
+        <div class="value">${now.tax}</div>${planNote('tax')}</div>
       <div class="card"><div class="label">Left in pots at age ${last.age}</div>
         <div class="value">${money(last.endTotal)}</div>${planNote('left')}</div>`;
   }
@@ -414,18 +417,21 @@
 
   function renderIncomeChart(rows, runOut) {
     const el = document.getElementById('incomeChart');
-    const max = niceMax(Math.max(0, ...rows.map((r) => Math.max(r.income, r.target || 0))));
+    const max = niceMax(Math.max(0, ...rows.map((r) => Math.max(r.gross, r.target || 0))));
     el.innerHTML = frame(rows, max, runOut, ({ x, y, step }) => {
       const bw = Math.max(1, step * 0.8), off = (step - bw) / 2;
-      let out = '';
+      let out = `<defs><pattern id="taxHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="6" height="6" class="tax-bg"/><line x1="0" y1="0" x2="0" y2="6" class="tax-stroke"/></pattern></defs>`;
       rows.forEach((r, i) => {
         let base = 0;
-        const tip = `Age ${r.age}: state ${money(r.statePension)}, DB ${money(r.dbIncome)}, pensions ${money(r.fromPensions)}, ISAs ${money(r.fromIsas)}${r.target !== null ? ', target ' + money(r.target) : ''}`;
+        const tip = `Age ${r.age}: state ${money(r.statePension)}, DB ${money(r.dbIncome)}, pensions ${money(r.fromPensions)}, ISAs ${money(r.fromIsas)}, tax ${money(r.tax)}, after tax ${money(r.income)}${r.target !== null ? ', target ' + money(r.target) : ''}`;
         out += `<g><title>${esc(tip)}</title>`;
         for (const [cls, v] of [['state', r.statePension], ['db', r.dbIncome], ['pots', r.fromPensions], ['isa', r.fromIsas]]) {
           if (v > 0) out += `<rect class="${cls}" x="${x(i) + off}" width="${bw}" y="${y(base + v)}" height="${y(base) - y(base + v)}"/>`;
           base += v;
         }
+        // Tax comes off the top of the bar, so the unhatched part is income after tax.
+        if (r.tax > 0) out += `<rect class="tax" x="${x(i) + off}" width="${bw}" y="${y(r.gross)}" height="${y(r.gross - r.tax) - y(r.gross)}"/>`;
         out += '</g>';
       });
       // Target line as horizontal steps.
@@ -464,12 +470,12 @@
     const lockedCol = rows.some((r) => r.locked > 0.5);
     const head = `<tr><th>${esc(state.people[0].name)} age</th>${others.map((p) => `<th>${esc(p.name)}</th>`).join('')}
       <th>Year</th><th>Paid in</th><th>Growth</th><th>State pension</th><th>DB pensions</th><th>From pensions</th><th>From ISAs</th>
-      <th>Total income</th><th>Target</th><th>Shortfall</th><th>Pensions at year end</th><th>ISAs at year end</th>${lockedCol ? '<th>Not yet accessible</th>' : ''}</tr>`;
+      <th>Before tax</th><th>Income tax</th><th>After tax</th><th>Target</th><th>Shortfall</th><th>Pensions at year end</th><th>ISAs at year end</th>${lockedCol ? '<th>Not yet accessible</th>' : ''}</tr>`;
     const body = rows.map((r) => `<tr class="${r.shortfall ? 'short' : ''}">
       <td>${r.age}</td>${r.ages.slice(1).map((a) => `<td>${a}</td>`).join('')}
       <td>${r.year}</td><td>${money(r.contributions)}</td><td>${money(r.growth)}</td>
       <td>${money(r.statePension)}</td><td>${money(r.dbIncome)}</td><td>${money(r.fromPensions)}</td><td>${money(r.fromIsas)}</td>
-      <td>${money(r.income)}</td><td>${r.target !== null ? money(r.target) : '—'}</td>
+      <td>${money(r.gross)}</td><td>${money(r.tax)}</td><td>${money(r.income)}</td><td>${r.target !== null ? money(r.target) : '—'}</td>
       <td class="shortfall">${r.shortfall ? money(r.shortfall) : ''}</td><td>${money(r.endPensions)}</td><td>${money(r.endIsas)}</td>${lockedCol ? `<td>${r.locked > 0.5 ? money(r.locked) : ''}</td>` : ''}</tr>`).join('');
     document.getElementById('table').innerHTML = `<thead>${head}</thead><tbody>${body}</tbody>`;
   }
