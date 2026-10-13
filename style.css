@@ -100,6 +100,7 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .sw.db { background: var(--db); }
 .sw.pots { background: var(--pots); }
 .sw.isa { background: var(--isa); }
+.sw.tax { background: repeating-linear-gradient(45deg, var(--panel) 0 2px, var(--muted) 2px 3px); border: 1px solid var(--muted); }
 .sw.area { background: var(--line); opacity: .3; }
 .sw.line { height: 0; border-top: 2px solid var(--line); border-radius: 0; vertical-align: 3px; }
 .sw.plan { height: 0; border-top: 2px dashed var(--plan); border-radius: 0; vertical-align: 3px; }
@@ -111,6 +112,9 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .chart .db { fill: var(--db); }
 .chart .pots { fill: var(--pots); }
 .chart .isa { fill: var(--isa); }
+.chart .tax { fill: url(#taxHatch); }
+.chart .tax-bg { fill: var(--panel); opacity: .75; }
+.chart .tax-stroke { stroke: var(--muted); stroke-width: 2; }
 .chart .isa-area { fill: var(--isa); opacity: .55; }
 .chart .target { stroke: var(--target); stroke-dasharray: 5 4; fill: none; stroke-width: 1.5; }
 .chart .area { fill: var(--line); opacity: .18; }
