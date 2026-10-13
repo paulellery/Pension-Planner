@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pension Planner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Pension Planner</h1>
+      <p class="sub">All figures in today's money. Inflation and tax are ignored. Your data stays in this browser.</p>
+    </div>
+    <div class="actions">
+      <button type="button" id="export">Export</button>
+      <label class="button">Import<input type="file" id="import" accept="application/json" hidden></label>
+      <button type="button" id="reset">Reset to example</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="summary" class="summary" aria-live="polite"></section>
+
+    <section class="panel">
+      <h2>Income each year</h2>
+      <div class="legend">
+        <span><i class="sw state"></i>State pension</span>
+        <span><i class="sw db"></i>Defined benefit</span>
+        <span><i class="sw pots"></i>From pots</span>
+        <span><i class="sw target"></i>Target income</span>
+      </div>
+      <div id="incomeChart" class="chart"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Total in pots</h2>
+      <div id="potChart" class="chart"></div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>People</h2>
+        <p class="hint">Ages in the charts and drawdown plan follow the first person.</p>
+        <div id="people" class="items"></div>
+        <button type="button" class="add" data-add="people">+ Add person</button>
+      </section>
+
+      <section class="panel">
+        <h2>Drawdown plan</h2>
+        <p class="hint">From each age, either aim for a total household income (pots top up state and defined benefit pensions) or take a percentage of the pots each year.</p>
+        <div id="drawdown" class="items"></div>
+        <button type="button" class="add" data-add="drawdown">+ Add age band</button>
+      </section>
+
+      <section class="panel">
+        <h2>Pension pots &amp; savings</h2>
+        <p class="hint">Payments in stop when the owner retires.</p>
+        <div id="pots" class="items"></div>
+        <button type="button" class="add" data-add="pots">+ Add pot</button>
+      </section>
+
+      <section class="panel">
+        <h2>Defined benefit pensions</h2>
+        <div id="db" class="items"></div>
+        <button type="button" class="add" data-add="db">+ Add defined benefit pension</button>
+      </section>
+
+      <section class="panel">
+        <h2>Settings</h2>
+        <div class="item">
+          <label>Project until age <input type="number" id="endAge" min="50" max="120" step="1"></label>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Year by year</h2>
+      <div class="table-wrap"><table id="table"></table></div>
+    </section>
+  </main>
+
+  <script src="model.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
