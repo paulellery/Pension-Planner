@@ -42,8 +42,8 @@ Everything the planner simplifies or leaves out, to review and pick from later. 
 | Gap | Effect | Notes |
 |---|---|---|
 | Growth is a fixed real rate each year. No market ups and downs, so no sequence-of-returns risk (a crash early in retirement does lasting damage). | ⬆ | Simple stress test (e.g. −25% in the first retirement year) or Monte Carlo ranges. |
-| Inflation is ignored, so growth rates must be entered above inflation. Easy to enter a nominal rate by mistake. | ⬆ if misentered | Hint on the field, or enter nominal growth plus inflation separately. |
-| No separate fees. They have to be netted off the growth rate. | ⬆ if forgotten | Fee % per pot. |
+| Inflation is ignored, so growth must be entered above inflation. Easy to enter a nominal rate by mistake. | ⬆ if misentered | Hinted on the field. |
+| One growth rate for every pot (all global index funds), after fees. Fee differences between platforms aren't modelled. | ↕ small | Fee % per pot if they differ a lot. |
 | Payments in are flat in today's money until retirement. No pay rises, no step changes, no stopping/starting. | ↕ | Escalation % or dated changes. |
 | ISA £20k a year allowance is not enforced. | ⬆ if exceeded | Warn above £20k/person/year. |
 | Withdrawals are split across a person's open pensions (and across all ISAs) in proportion to size. You can't choose which pot goes first. | ↕ | Draw order per pot. |

@@ -5,7 +5,7 @@ A single-page retirement planner that runs entirely in the browser. Open `index.
 It models:
 
 - **Multiple people**, each with a current age, a retirement age and a State Pension (amount and start age).
-- **Pensions**, each with an owner, a current value, monthly payments in (which stop at the owner's retirement age), its own growth rate and an **access age**: the owner's age when it can first be drawn from.
+- **Pensions**, each with an owner, a current value, monthly payments in (which stop at the owner's retirement age) and an **access age**: the owner's age when it can first be drawn from.
 - **ISAs and savings**, set up the same way but with no access age: they can be drawn from any time. All savings are treated as ISAs, so they're tax free.
 - **Defined benefit pensions**, each paying a fixed amount a year from the owner's chosen age.
 - **Target household income after tax, by age band**, keyed on the first person's age. State and defined benefit pensions count towards the target first, and pensions and ISAs are drawn down only for the rest.
@@ -26,7 +26,7 @@ The summary cards show the plan's figure under anything the what-if changes, and
 
 Assumptions:
 
-- Everything is in today's money, so inflation is ignored and growth rates should be real (above inflation).
+- Everything is in today's money, so inflation is ignored. One **investment growth** rate (in Settings) applies to every pension and ISA, since they're all invested the same way. It should be real (above inflation) and after fees.
 - **Income tax** uses today's (2025/26) bands for England, Wales & NI, hardcoded and held level: personal allowance £12,570 (lost at £1 per £2 over £100k), 20% to £50,270, 40% to £125,140, 45% above. Each person is taxed separately.
 - State and DB pensions are taxable income. 25% of each pension withdrawal is tax free and the rest is taxed; ISA withdrawals are tax free. The £268,275 cap on tax-free cash, National Insurance and Scottish rates are ignored. Monthly payments in are taken as the gross amount, including tax relief.
 - Each year the pensions and ISAs make up the after-tax target as cheaply as possible: each person's pension first uses their remaining tax-free allowance, then ISAs, then pensions at basic rate, then higher rates. This is the cheapest choice for each year on its own, not a whole-retirement plan.

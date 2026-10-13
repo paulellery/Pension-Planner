@@ -73,10 +73,12 @@
     const endAge = num(data.settings && data.settings.endAge, 100);
     const years = Math.max(0, Math.floor(endAge - startAge));
 
+    // One growth rate for every pot: they're all invested the same way.
+    const growthRate = num(data.settings && data.settings.growth, 5) / 100;
     const pot = (kind) => (p) => ({
       kind,
       owner: findPerson(p.ownerId),
-      growth: num(p.growth) / 100,
+      growth: growthRate,
       monthly: num(p.monthly),
       bal: Math.max(0, num(p.balance)),
       // Owner's age when a pension can first be drawn from. ISAs can be used any time.

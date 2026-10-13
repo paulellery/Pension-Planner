@@ -16,11 +16,11 @@
         { id: b, name: 'Sam', age: 48, retireAge: 60, statePension: 12548, statePensionAge: 67 },
       ],
       pots: [
-        { id: uid(), name: 'Workplace pension', ownerId: a, balance: 150000, monthly: 500, growth: 5, accessAge: 57 },
-        { id: uid(), name: 'SIPP', ownerId: b, balance: 60000, monthly: 250, growth: 5, accessAge: 57 },
+        { id: uid(), name: 'Workplace pension', ownerId: a, balance: 150000, monthly: 500, accessAge: 57 },
+        { id: uid(), name: 'SIPP', ownerId: b, balance: 60000, monthly: 250, accessAge: 57 },
       ],
       isas: [
-        { id: uid(), name: 'Stocks & shares ISA', ownerId: a, balance: 20000, monthly: 200, growth: 4 },
+        { id: uid(), name: 'Stocks & shares ISA', ownerId: a, balance: 20000, monthly: 200 },
       ],
       db: [{ id: uid(), name: 'Final salary scheme', ownerId: b, annual: 8000, startAge: 65 }],
       drawdown: [
@@ -28,7 +28,7 @@
         { id: uid(), fromAge: 75, value: 45000 },
         { id: uid(), fromAge: 85, value: 38000 },
       ],
-      settings: { endAge: 100 },
+      settings: { endAge: 100, growth: 5 },
       whatIf: noWhatIf(),
     };
   }
@@ -58,6 +58,14 @@
     }
     if (d.settings) out.settings = { ...out.settings, ...d.settings };
     out.whatIf = { ...noWhatIf(), ...d.whatIf };
+    // Older saves had a growth rate per pot: use their size-weighted average.
+    const all = [...out.pots, ...out.isas].filter((p) => p.growth !== undefined);
+    if (all.length && !(d.settings && d.settings.growth !== undefined)) {
+      const total = all.reduce((t, p) => t + num(p.balance), 0);
+      const avg = total > 0 ? all.reduce((t, p) => t + num(p.growth) * num(p.balance), 0) / total : num(all[0].growth);
+      out.settings.growth = Math.round(avg * 10) / 10;
+    }
+    for (const p of [...out.pots, ...out.isas]) delete p.growth;
     if (!out.people.length) out.people = example().people.slice(0, 1);
     return out;
   }
@@ -172,7 +180,6 @@
       ['ownerId', 'owner', 'Owner'],
       ['balance', 'number', 'Current value £'],
       ['monthly', 'number', 'Paying in £/month'],
-      ['growth', 'number', 'Growth %/yr'],
       ['accessAge', 'number', 'Access from age'],
     ],
     isas: [
@@ -180,7 +187,6 @@
       ['ownerId', 'owner', 'Owner'],
       ['balance', 'number', 'Current value £'],
       ['monthly', 'number', 'Paying in £/month'],
-      ['growth', 'number', 'Growth %/yr'],
     ],
     db: [
       ['name', 'text', 'Scheme'],
@@ -196,8 +202,8 @@
 
   const BLANK = {
     people: () => ({ name: 'Person ' + (state.people.length + 1), age: 50, retireAge: 65, statePension: 12548, statePensionAge: 67 }),
-    isas: () => ({ name: 'ISA', ownerId: state.people[0].id, balance: 0, monthly: 0, growth: 4 }),
-    pots: () => ({ name: 'Pension', ownerId: state.people[0].id, balance: 0, monthly: 0, growth: 5, accessAge: 57 }),
+    isas: () => ({ name: 'ISA', ownerId: state.people[0].id, balance: 0, monthly: 0 }),
+    pots: () => ({ name: 'Pension', ownerId: state.people[0].id, balance: 0, monthly: 0, accessAge: 57 }),
     db: () => ({ name: 'DB pension', ownerId: state.people[0].id, annual: 0, startAge: 65 }),
     drawdown: () => {
       const last = state.drawdown[state.drawdown.length - 1];
@@ -231,6 +237,7 @@
         </div>`).join('') || '<p class="hint">None yet.</p>';
     }
     document.getElementById('endAge').value = state.settings.endAge;
+    document.getElementById('growth').value = state.settings.growth;
   }
 
   function refreshOwnerSelects() {
@@ -242,8 +249,8 @@
 
   document.addEventListener('input', (e) => {
     const el = e.target;
-    if (el.id === 'endAge') {
-      state.settings.endAge = el.value;
+    if (el.id === 'endAge' || el.id === 'growth') {
+      state.settings[el.id] = el.value;
     } else if (el.dataset.w) {
       const k = el.dataset.w;
       const v = parseFloat(el.value);
