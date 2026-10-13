@@ -19,14 +19,16 @@
     const endAge = num(data.settings && data.settings.endAge, 100);
     const years = Math.max(0, Math.floor(endAge - startAge));
 
-    const pots = (data.pots || []).map((p) => ({
+    const pot = (kind) => (p) => ({
+      kind,
       owner: findPerson(p.ownerId),
       growth: num(p.growth) / 100,
       monthly: num(p.monthly),
       bal: Math.max(0, num(p.balance)),
-      // Owner's age when it can first be drawn from. Blank (ISAs, savings) means any time.
-      accessAge: num(p.accessAge, -Infinity),
-    }));
+      // Owner's age when a pension can first be drawn from. ISAs can be used any time.
+      accessAge: kind === 'pension' ? num(p.accessAge, -Infinity) : -Infinity,
+    });
+    const pots = (data.pots || []).map(pot('pension')).concat((data.isas || []).map(pot('isa')));
     const dbs = (data.db || []).map((d) => ({
       owner: findPerson(d.ownerId),
       annual: num(d.annual),
@@ -59,7 +61,9 @@
       let contributions = 0;
       let startTotal = 0;
       let available = 0;
+      let startIsas = 0;
       for (const p of pots) {
+        if (p.kind === 'isa') startIsas += p.bal;
         p.c = ageOf(p.owner) < num(p.owner.retireAge, Infinity) ? p.monthly * 12 : 0;
         p.open = ageOf(p.owner) >= p.accessAge;
         contributions += p.c;
@@ -80,6 +84,8 @@
       // Withdraw proportionally across the pots that can be accessed; flows happen mid-year so earn half a year's growth.
       let growth = 0;
       let endTotal = 0;
+      const fromPot = { pension: 0, isa: 0 };
+      const endPot = { pension: 0, isa: 0 };
       for (const p of pots) {
         const share = p.open && available > 0 ? (p.bal + p.c) / available : 0;
         const net = p.c - withdrawn * share;
@@ -87,6 +93,8 @@
         p.bal = Math.max(0, p.bal + net + g);
         growth += g;
         endTotal += p.bal;
+        fromPot[p.kind] += withdrawn * share;
+        endPot[p.kind] += p.bal;
       }
 
       const shortfall = need - withdrawn;
@@ -108,11 +116,16 @@
         statePension,
         dbIncome,
         withdrawn,
+        fromPensions: fromPot.pension,
+        fromIsas: fromPot.isa,
         target,
         income: guaranteed + withdrawn,
         shortfall: shortfall > 0.5 ? shortfall : 0,
         startTotal,
+        startIsas,
         endTotal,
+        endPensions: endPot.pension,
+        endIsas: endPot.isa,
         locked,
       });
     }

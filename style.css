@@ -8,6 +8,7 @@
   --state: #4c78a8;
   --db: #9d6fc2;
   --pots: #e0a23b;
+  --isa: #c9587c;
   --line: #2f6f5e;
   --target: #1d1f23;
   --bad: #c2412d;
@@ -28,6 +29,7 @@
     --state: #6f9fd6;
     --db: #b893dc;
     --pots: #e8b660;
+    --isa: #e58aa6;
     --line: #6cc2a6;
     --target: #e8e6e1;
     --bad: #f0806c;
@@ -97,6 +99,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .sw.state { background: var(--state); }
 .sw.db { background: var(--db); }
 .sw.pots { background: var(--pots); }
+.sw.isa { background: var(--isa); }
+.sw.area { background: var(--line); opacity: .3; }
 .sw.line { height: 0; border-top: 2px solid var(--line); border-radius: 0; vertical-align: 3px; }
 .sw.plan { height: 0; border-top: 2px dashed var(--plan); border-radius: 0; vertical-align: 3px; }
 .sw.target { height: 0; border-top: 2px dashed var(--target); border-radius: 0; vertical-align: 3px; }
@@ -106,6 +110,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .chart .state { fill: var(--state); }
 .chart .db { fill: var(--db); }
 .chart .pots { fill: var(--pots); }
+.chart .isa { fill: var(--isa); }
+.chart .isa-area { fill: var(--isa); opacity: .55; }
 .chart .target { stroke: var(--target); stroke-dasharray: 5 4; fill: none; stroke-width: 1.5; }
 .chart .area { fill: var(--line); opacity: .18; }
 .chart .plan-line { stroke: var(--plan); fill: none; stroke-width: 2; stroke-dasharray: 6 4; }

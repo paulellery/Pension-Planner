@@ -5,20 +5,21 @@ A single-page retirement planner that runs entirely in the browser. Open `index.
 It models:
 
 - **Multiple people**, each with a current age, a retirement age and a State Pension (amount and start age).
-- **Multiple pots** (pensions, ISAs, savings), each with an owner, a current value, monthly payments in (which stop at the owner's retirement age), its own growth rate and an **access age**: the owner's age when it can first be drawn from. Leave the access age blank for ISAs and savings, which can be drawn from any time.
+- **Pensions**, each with an owner, a current value, monthly payments in (which stop at the owner's retirement age), its own growth rate and an **access age**: the owner's age when it can first be drawn from.
+- **ISAs and savings**, set up the same way but with no access age: they can be drawn from any time.
 - **Defined benefit pensions**, each paying a fixed amount a year from the owner's chosen age.
-- **Target household income by age band**, keyed on the first person's age. State and defined benefit pensions count towards the target first, and the pots are drawn down only for the rest.
+- **Target household income by age band**, keyed on the first person's age. State and defined benefit pensions count towards the target first, and pensions and ISAs are drawn down only for the rest.
 
 It shows when the money runs out: the first year the pots can't make up the gap to the target income.
 
-Before a pension's access age it is locked: it keeps growing, but nothing is drawn from it. ISAs and savings bridge the years until then. If they can't cover the target while money is still locked, the summary shows a **gap before pensions open** separately from the money running out.
+Before a pension's access age it is locked: it keeps growing, but nothing is drawn from it. ISAs and savings bridge the years until then. The Income chart, Total chart and Table show pensions and ISAs separately. If they can't cover the target while money is still locked, the summary shows a **gap before pensions open** separately from the money running out.
 
 The page has four tabs: **Details** (everything above), **Income** (income each year), **Total** (total in pots) and **Table** (year by year).
 
 The Income, Total and Table tabs share a collapsible **What if** panel (closed by default, with a badge showing how many changes are active) for trying changes without editing your details:
 
 - **Target income** for the first age band.
-- **% change to monthly payments in**, applied to every pot.
+- **% change to monthly pension payments**, applied to every pension (not ISAs).
 - **Retirement age** of the first person. The first target income band moves by the same number of years.
 
 The summary cards show the plan's figure under anything the what-if changes, and the Total chart draws the plan as a dashed line. **Back to my plan** clears the changes.
@@ -27,6 +28,6 @@ Assumptions:
 
 - Everything is in today's money, so inflation is ignored and growth rates should be real (above inflation).
 - Tax is ignored.
-- It steps through the years annually. Payments in and withdrawals happen mid-year, and withdrawals are taken from each accessible pot in proportion to its size.
+- It steps through the years annually. Payments in and withdrawals happen mid-year, and withdrawals are taken from each pension or ISA that can be accessed, in proportion to its size.
 
 Data is saved to `localStorage` in the browser. Use **Export** and **Import** to back it up or move it to another device.

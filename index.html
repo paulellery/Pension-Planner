@@ -41,7 +41,7 @@
           <label><span>Target income £/yr <span id="wTargetFrom"></span></span>
             <input type="number" data-w="target" inputmode="decimal" step="1000" min="0">
             <span class="plan" id="wTargetPlan"></span></label>
-          <label><span>Change to monthly payments in %</span>
+          <label><span>Change to monthly pension payments %</span>
             <input type="number" data-w="contribPct" inputmode="decimal" step="5" min="-100">
             <span class="plan" id="wContribPlan"></span></label>
           <label><span><span id="wRetireName"></span>’s retirement age</span>
@@ -64,16 +64,23 @@
 
         <section class="panel">
           <h2>Target income</h2>
-          <p class="hint">Total household income you want each year from each age. State and defined benefit pensions count towards it first; the pots are drawn down to make up the rest.</p>
+          <p class="hint">Total household income you want each year from each age. State and defined benefit pensions count towards it first; pensions and ISAs are drawn down to make up the rest.</p>
           <div id="drawdown" class="items"></div>
           <button type="button" class="add" data-add="drawdown">+ Add age band</button>
         </section>
 
         <section class="panel">
-          <h2>Pension pots &amp; savings</h2>
-          <p class="hint">Payments in stop when the owner retires. <b>Access from age</b> is the owner's age when the pot can first be drawn from (57 for most pensions from 2028). Leave it blank for ISAs and savings, which can be used any time, so they bridge the gap until the pensions open.</p>
+          <h2>Pensions</h2>
+          <p class="hint">Payments in stop when the owner retires. <b>Access from age</b> is the owner's age when the pension can first be drawn from (57 for most pensions from 2028).</p>
           <div id="pots" class="items"></div>
-          <button type="button" class="add" data-add="pots">+ Add pot</button>
+          <button type="button" class="add" data-add="pots">+ Add pension</button>
+        </section>
+
+        <section class="panel">
+          <h2>ISAs &amp; savings</h2>
+          <p class="hint">Can be drawn from any time, so they bridge the gap until the pensions open. Payments in stop when the owner retires.</p>
+          <div id="isas" class="items"></div>
+          <button type="button" class="add" data-add="isas">+ Add ISA</button>
         </section>
 
         <section class="panel">
@@ -96,7 +103,8 @@
       <div class="legend">
         <span><i class="sw state"></i>State pension</span>
         <span><i class="sw db"></i>Defined benefit</span>
-        <span><i class="sw pots"></i>From pots</span>
+        <span><i class="sw pots"></i>From pensions</span>
+        <span><i class="sw isa"></i>From ISAs</span>
         <span><i class="sw target"></i>Target income</span>
       </div>
       <div id="incomeChart" class="chart"></div>
@@ -104,9 +112,11 @@
 
     <section class="panel" data-panel="total" role="tabpanel">
       <h2>Total in pots</h2>
-      <div class="legend" id="potLegend" hidden>
-        <span><i class="sw line"></i>What if</span>
-        <span><i class="sw plan"></i>Your plan</span>
+      <div class="legend" id="potLegend">
+        <span><i class="sw area"></i>Pensions</span>
+        <span><i class="sw isa"></i>ISAs</span>
+        <span class="vs" hidden><i class="sw line"></i>What if</span>
+        <span class="vs" hidden><i class="sw plan"></i>Your plan</span>
       </div>
       <div id="potChart" class="chart"></div>
     </section>
