@@ -61,19 +61,12 @@
         startTotal += p.bal;
       }
 
-      // Drawdown: the band that applies at person 1's age this year.
+      // Target income: the band that applies at person 1's age this year.
+      // Pots only need to cover what the State and DB pensions don't.
       let band = null;
       for (const b of bands) if (num(b.fromAge) <= age) band = b;
-      let need = 0;
-      let target = null;
-      if (band) {
-        if (band.mode === 'percent') {
-          need = (startTotal * num(band.value)) / 100;
-        } else {
-          target = num(band.value);
-          need = Math.max(0, target - guaranteed);
-        }
-      }
+      const target = band ? num(band.value) : null;
+      const need = band ? Math.max(0, target - guaranteed) : 0;
 
       const available = startTotal + contributions;
       const withdrawn = Math.min(need, available);

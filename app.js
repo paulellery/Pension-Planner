@@ -22,9 +22,9 @@
       ],
       db: [{ id: uid(), name: 'Final salary scheme', ownerId: b, annual: 8000, startAge: 65 }],
       drawdown: [
-        { id: uid(), fromAge: 60, mode: 'amount', value: 58000 },
-        { id: uid(), fromAge: 75, mode: 'amount', value: 45000 },
-        { id: uid(), fromAge: 85, mode: 'amount', value: 38000 },
+        { id: uid(), fromAge: 60, value: 58000 },
+        { id: uid(), fromAge: 75, value: 45000 },
+        { id: uid(), fromAge: 85, value: 38000 },
       ],
       settings: { endAge: 100 },
     };
@@ -75,8 +75,7 @@
     ],
     drawdown: [
       ['fromAge', 'number', 'From age'],
-      ['mode', 'mode', 'Type'],
-      ['value', 'number', 'Amount'],
+      ['value', 'number', 'Target income £/yr'],
     ],
   };
 
@@ -86,7 +85,7 @@
     db: () => ({ name: 'DB pension', ownerId: state.people[0].id, annual: 0, startAge: 65 }),
     drawdown: () => {
       const last = state.drawdown[state.drawdown.length - 1];
-      return { fromAge: last ? num(last.fromAge) + 10 : state.people[0].retireAge, mode: 'amount', value: last ? last.value : 30000 };
+      return { fromAge: last ? num(last.fromAge) + 10 : state.people[0].retireAge, value: last ? last.value : 30000 };
     },
   };
 
@@ -99,11 +98,6 @@
     let control;
     if (type === 'owner') {
       control = `<select ${attrs} class="owner">${ownerOptions(item[key])}</select>`;
-    } else if (type === 'mode') {
-      control = `<select ${attrs}>
-        <option value="amount"${item.mode !== 'percent' ? ' selected' : ''}>Income target £/yr</option>
-        <option value="percent"${item.mode === 'percent' ? ' selected' : ''}>% of pots per yr</option>
-      </select>`;
     } else {
       const extra = type === 'number' ? ' inputmode="decimal" step="any"' : '';
       control = `<input type="${type}" ${attrs} value="${esc(item[key])}"${extra}>`;
@@ -220,9 +214,9 @@
     el.innerHTML = runOutCard + `
       <div class="card"><div class="label">Pots at ${esc(p1.name)}'s retirement (age ${retireRow.age})</div>
         <div class="value">${money(potsAtRetire)}</div></div>
-      <div class="card"><div class="label">Income in first drawdown year</div>
+      <div class="card"><div class="label">Income in first retirement year</div>
         <div class="value">${firstDraw ? money(firstDraw.income) : '—'}</div>
-        <div class="note">${firstDraw ? 'At age ' + firstDraw.age : 'No drawdown plan set'}</div></div>
+        <div class="note">${firstDraw ? 'At age ' + firstDraw.age : 'No target income set'}</div></div>
       <div class="card"><div class="label">Left in pots at age ${last.age}</div>
         <div class="value">${money(last.endTotal)}</div></div>`;
   }

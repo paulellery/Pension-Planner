@@ -7,11 +7,9 @@ It models:
 - **Multiple people**, each with a current age, a retirement age and a State Pension (amount and start age).
 - **Multiple pots** (pensions, ISAs, savings), each with an owner, a current value, monthly payments in (which stop at the owner's retirement age) and its own growth rate.
 - **Defined benefit pensions**, each paying a fixed amount a year from the owner's chosen age.
-- **A drawdown plan by age band.** Each band is keyed on the first person's age and is either:
-  - an *income target*, where pots top up the State Pension and defined benefit pensions to reach a total household income, or
-  - a *percentage* of the pots withdrawn each year.
+- **Target household income by age band**, keyed on the first person's age. State and defined benefit pensions count towards the target first, and the pots are drawn down only for the rest.
 
-It shows when the money runs out: the first year the pots can't cover the planned drawdown.
+It shows when the money runs out: the first year the pots can't make up the gap to the target income.
 
 Assumptions:
 
