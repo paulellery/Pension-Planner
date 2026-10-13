@@ -18,7 +18,7 @@ Everything the planner simplifies or leaves out, to review and pick from later. 
 | England, Wales & NI only. No Scottish rates. | ↕ | Add a region setting with Scottish bands. |
 | Every pension withdrawal is 25% tax free (like a UFPLS). There is no option to take the tax-free cash as one lump sum up front. | ↕ | Option per pension: lump sum at access age, or 25% of each withdrawal. |
 | No £268,275 cap on lifetime tax-free cash (the Lump Sum Allowance). | ⬆ for large pots | Track tax-free cash used per person; once it hits the cap, withdrawals are fully taxable. |
-| Cash savings are treated like ISAs: interest is untaxed. | ⬆ | Split ISAs from cash savings; tax interest above the Personal Savings Allowance. |
+| **Decision (for now):** all savings are treated as ISAs, so interest and withdrawals are untaxed. Cash savings outside an ISA would really be taxed on interest above the Personal Savings Allowance. | ⬆ small | If needed: separate cash savings type, tax interest above the PSA. |
 | No Marriage Allowance, dividend or savings allowances. | ⬇ slightly | Marriage Allowance only matters if one person's income is under £12,570. |
 | No National Insurance. That's fine while there's no earnings income (see Deferred). | — | Needed alongside earnings. |
 | Tax is minimised one year at a time, not across the whole retirement. It can use up ISAs early and then pay more tax later, or miss drawing extra pension at 0–20% in good years to save higher-rate tax later. | ⬇ | Smooth taxable income over the years, or let the user set a fixed amount to draw from pensions each year. |

@@ -6,7 +6,7 @@ It models:
 
 - **Multiple people**, each with a current age, a retirement age and a State Pension (amount and start age).
 - **Pensions**, each with an owner, a current value, monthly payments in (which stop at the owner's retirement age), its own growth rate and an **access age**: the owner's age when it can first be drawn from.
-- **ISAs and savings**, set up the same way but with no access age: they can be drawn from any time.
+- **ISAs and savings**, set up the same way but with no access age: they can be drawn from any time. All savings are treated as ISAs, so they're tax free.
 - **Defined benefit pensions**, each paying a fixed amount a year from the owner's chosen age.
 - **Target household income after tax, by age band**, keyed on the first person's age. State and defined benefit pensions count towards the target first, and pensions and ISAs are drawn down only for the rest.
 
