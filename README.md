@@ -33,3 +33,5 @@ Assumptions:
 - It steps through the years annually. Payments in and withdrawals happen mid-year. A person's withdrawal is split across their open pensions in proportion to size, and ISA withdrawals across all ISAs the same way.
 
 Data is saved to `localStorage` in the browser. Use **Export** and **Import** to back it up or move it to another device.
+
+Known gaps and simplifications are tracked in [LIMITATIONS.md](LIMITATIONS.md).
