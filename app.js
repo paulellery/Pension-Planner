@@ -18,7 +18,9 @@
       pots: [
         { id: uid(), name: 'Workplace pension', ownerId: a, balance: 150000, monthly: 500, growth: 5, accessAge: 57 },
         { id: uid(), name: 'SIPP', ownerId: b, balance: 60000, monthly: 250, growth: 5, accessAge: 57 },
-        { id: uid(), name: 'ISA', ownerId: a, balance: 20000, monthly: 200, growth: 4, accessAge: '' },
+      ],
+      isas: [
+        { id: uid(), name: 'Stocks & shares ISA', ownerId: a, balance: 20000, monthly: 200, growth: 4 },
       ],
       db: [{ id: uid(), name: 'Final salary scheme', ownerId: b, annual: 8000, startAge: 65 }],
       drawdown: [
@@ -47,7 +49,13 @@
   }
   function normalise(d) {
     const out = example();
-    for (const k of ['people', 'pots', 'db', 'drawdown']) if (Array.isArray(d[k])) out[k] = d[k];
+    for (const k of ['people', 'pots', 'isas', 'db', 'drawdown']) if (Array.isArray(d[k])) out[k] = d[k];
+    // Older saves kept ISAs among the pots.
+    if (!Array.isArray(d.isas)) {
+      const isISA = (p) => /\bisa\b/i.test(p.name || '');
+      out.isas = out.pots.filter(isISA).map(({ accessAge, ...p }) => p);
+      out.pots = out.pots.filter((p) => !isISA(p));
+    }
     if (d.settings) out.settings = { ...out.settings, ...d.settings };
     out.whatIf = { ...noWhatIf(), ...d.whatIf };
     if (!out.people.length) out.people = example().people.slice(0, 1);
@@ -160,12 +168,19 @@
       ['statePensionAge', 'number', 'State pension age'],
     ],
     pots: [
-      ['name', 'text', 'Pot'],
+      ['name', 'text', 'Pension'],
       ['ownerId', 'owner', 'Owner'],
       ['balance', 'number', 'Current value £'],
       ['monthly', 'number', 'Paying in £/month'],
       ['growth', 'number', 'Growth %/yr'],
       ['accessAge', 'number', 'Access from age'],
+    ],
+    isas: [
+      ['name', 'text', 'ISA'],
+      ['ownerId', 'owner', 'Owner'],
+      ['balance', 'number', 'Current value £'],
+      ['monthly', 'number', 'Paying in £/month'],
+      ['growth', 'number', 'Growth %/yr'],
     ],
     db: [
       ['name', 'text', 'Scheme'],
@@ -181,7 +196,8 @@
 
   const BLANK = {
     people: () => ({ name: 'Person ' + (state.people.length + 1), age: 50, retireAge: 65, statePension: 12548, statePensionAge: 67 }),
-    pots: () => ({ name: 'New pot', ownerId: state.people[0].id, balance: 0, monthly: 0, growth: 5, accessAge: 57 }),
+    isas: () => ({ name: 'ISA', ownerId: state.people[0].id, balance: 0, monthly: 0, growth: 4 }),
+    pots: () => ({ name: 'Pension', ownerId: state.people[0].id, balance: 0, monthly: 0, growth: 5, accessAge: 57 }),
     db: () => ({ name: 'DB pension', ownerId: state.people[0].id, annual: 0, startAge: 65 }),
     drawdown: () => {
       const last = state.drawdown[state.drawdown.length - 1];
@@ -254,7 +270,7 @@
       if (col === 'people' && state.people.length === 1) return alert('You need at least one person.');
       const [removed] = state[col].splice(+rem.dataset.i, 1);
       if (col === 'people') {
-        for (const x of [...state.pots, ...state.db]) if (x.ownerId === removed.id) x.ownerId = state.people[0].id;
+        for (const x of [...state.pots, ...state.isas, ...state.db]) if (x.ownerId === removed.id) x.ownerId = state.people[0].id;
       }
     } else {
       return;
@@ -323,6 +339,7 @@
     if (!rows.length) { el.innerHTML = ''; return; }
     const retireRow = rows.find((r) => r.age >= num(p1.retireAge)) || rows[0];
     const potsAtRetire = retireRow.startTotal;
+    const retireIsas = retireRow.startIsas;
     const last = rows[rows.length - 1];
     const firstDraw = rows.find((r) => r.target !== null || r.withdrawn > 0);
 
@@ -343,13 +360,14 @@
       ? `<div class="card${gap ? ' bad' : ' good'}"><div class="label">Gap before pensions open</div>
            <div class="value">${gap ? gapText(gap) : 'None'}</div>
            <div class="note">${gap
-             ? `Not enough in accessible pots (like ISAs) to reach the target until the pensions can be drawn — short by ${money(gap.total)} in total.`
-             : 'Accessible pots cover the target until the pensions open.'}</div>${planNote('gap')}</div>`
+             ? `Not enough in ISAs and open pensions to reach the target until the pensions can be drawn — short by ${money(gap.total)} in total.`
+             : 'ISAs cover the target until the pensions open.'}</div>${planNote('gap')}</div>`
       : '';
 
     el.innerHTML = runOutCard + gapCard + `
       <div class="card"><div class="label">Pots at ${esc(p1.name)}'s retirement (age ${retireRow.age})</div>
-        <div class="value">${money(potsAtRetire)}</div>${planNote('retire')}</div>
+        <div class="value">${money(potsAtRetire)}</div>
+        <div class="note">${money(retireRow.startTotal - retireIsas)} pensions, ${money(retireIsas)} ISAs</div>${planNote('retire')}</div>
       <div class="card"><div class="label">Income in first retirement year</div>
         <div class="value">${firstDraw ? money(firstDraw.income) : '—'}</div>
         <div class="note">${firstDraw ? 'At age ' + firstDraw.age : 'No target income set'}</div>${planNote('firstIncome')}</div>
@@ -402,9 +420,9 @@
       let out = '';
       rows.forEach((r, i) => {
         let base = 0;
-        const tip = `Age ${r.age}: state ${money(r.statePension)}, DB ${money(r.dbIncome)}, pots ${money(r.withdrawn)}${r.target !== null ? ', target ' + money(r.target) : ''}`;
+        const tip = `Age ${r.age}: state ${money(r.statePension)}, DB ${money(r.dbIncome)}, pensions ${money(r.fromPensions)}, ISAs ${money(r.fromIsas)}${r.target !== null ? ', target ' + money(r.target) : ''}`;
         out += `<g><title>${esc(tip)}</title>`;
-        for (const [cls, v] of [['state', r.statePension], ['db', r.dbIncome], ['pots', r.withdrawn]]) {
+        for (const [cls, v] of [['state', r.statePension], ['db', r.dbIncome], ['pots', r.fromPensions], ['isa', r.fromIsas]]) {
           if (v > 0) out += `<rect class="${cls}" x="${x(i) + off}" width="${bw}" y="${y(base + v)}" height="${y(base) - y(base + v)}"/>`;
           base += v;
         }
@@ -426,15 +444,18 @@
     const el = document.getElementById('potChart');
     const all = planRows ? rows.concat(planRows) : rows;
     const max = niceMax(Math.max(0, ...all.map((r) => Math.max(r.startTotal, r.endTotal))));
-    document.getElementById('potLegend').hidden = !planRows;
+    for (const el of document.querySelectorAll('#potLegend .vs')) el.hidden = !planRows;
     el.innerHTML = frame(rows, max, runOut, ({ x, y, step }) => {
       if (!rows.length) return '';
       const path = (list) => 'M' + list.map((r, i) => `${x(i) + step / 2},${y(r.endTotal)}`).join('L');
       const line = path(rows);
       const planLine = planRows ? `<path class="plan-line" d="${path(planRows)}"/>` : '';
-      const area = `${line}L${x(rows.length - 1) + step / 2},${y(0)}L${x(0) + step / 2},${y(0)}Z`;
-      const tips = rows.map((r, i) => `<rect x="${x(i)}" width="${step}" y="${M.t}" height="${H - M.t - M.b}" fill="transparent"><title>Age ${r.age} (${r.year}): ${money(r.endTotal)}</title></rect>`).join('');
-      return `<path class="area" d="${area}"/>${planLine}<path class="line" d="${line}"/>${tips}`;
+      const base = `L${x(rows.length - 1) + step / 2},${y(0)}L${x(0) + step / 2},${y(0)}Z`;
+      const area = line + base;
+      // ISAs shaded along the bottom; the rest of the area up to the total is pensions.
+      const isaArea = 'M' + rows.map((r, i) => `${x(i) + step / 2},${y(r.endIsas)}`).join('L') + base;
+      const tips = rows.map((r, i) => `<rect x="${x(i)}" width="${step}" y="${M.t}" height="${H - M.t - M.b}" fill="transparent"><title>Age ${r.age} (${r.year}): ${money(r.endTotal)} — pensions ${money(r.endPensions)}, ISAs ${money(r.endIsas)}</title></rect>`).join('');
+      return `<path class="area" d="${area}"/><path class="isa-area" d="${isaArea}"/>${planLine}<path class="line" d="${line}"/>${tips}`;
     });
   }
 
@@ -442,14 +463,14 @@
     const others = state.people.slice(1);
     const lockedCol = rows.some((r) => r.locked > 0.5);
     const head = `<tr><th>${esc(state.people[0].name)} age</th>${others.map((p) => `<th>${esc(p.name)}</th>`).join('')}
-      <th>Year</th><th>Paid in</th><th>Growth</th><th>State pension</th><th>DB pensions</th><th>From pots</th>
-      <th>Total income</th><th>Target</th><th>Shortfall</th><th>Pots at year end</th>${lockedCol ? '<th>Not yet accessible</th>' : ''}</tr>`;
+      <th>Year</th><th>Paid in</th><th>Growth</th><th>State pension</th><th>DB pensions</th><th>From pensions</th><th>From ISAs</th>
+      <th>Total income</th><th>Target</th><th>Shortfall</th><th>Pensions at year end</th><th>ISAs at year end</th>${lockedCol ? '<th>Not yet accessible</th>' : ''}</tr>`;
     const body = rows.map((r) => `<tr class="${r.shortfall ? 'short' : ''}">
       <td>${r.age}</td>${r.ages.slice(1).map((a) => `<td>${a}</td>`).join('')}
       <td>${r.year}</td><td>${money(r.contributions)}</td><td>${money(r.growth)}</td>
-      <td>${money(r.statePension)}</td><td>${money(r.dbIncome)}</td><td>${money(r.withdrawn)}</td>
+      <td>${money(r.statePension)}</td><td>${money(r.dbIncome)}</td><td>${money(r.fromPensions)}</td><td>${money(r.fromIsas)}</td>
       <td>${money(r.income)}</td><td>${r.target !== null ? money(r.target) : '—'}</td>
-      <td class="shortfall">${r.shortfall ? money(r.shortfall) : ''}</td><td>${money(r.endTotal)}</td>${lockedCol ? `<td>${r.locked > 0.5 ? money(r.locked) : ''}</td>` : ''}</tr>`).join('');
+      <td class="shortfall">${r.shortfall ? money(r.shortfall) : ''}</td><td>${money(r.endPensions)}</td><td>${money(r.endIsas)}</td>${lockedCol ? `<td>${r.locked > 0.5 ? money(r.locked) : ''}</td>` : ''}</tr>`).join('');
     document.getElementById('table').innerHTML = `<thead>${head}</thead><tbody>${body}</tbody>`;
   }
 
