@@ -135,11 +135,18 @@ tr.short td.shortfall { color: var(--bad); font-weight: 600; }
 .tabs button[aria-selected="true"] { color: var(--text); font-weight: 600; border-bottom-color: var(--accent); }
 
 .results-head { display: grid; gap: 1rem; }
-.whatif-top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
-.whatif-top h2 { margin: 0; }
+.whatif summary { display: flex; align-items: center; gap: .6rem; cursor: pointer; list-style: none; }
+.whatif summary::-webkit-details-marker { display: none; }
+.whatif summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+.whatif[open] summary::before { transform: rotate(90deg); }
+.whatif summary h2 { margin: 0; }
+.whatif-count { font-size: .8rem; padding: .1rem .5rem; border-radius: 999px; background: var(--changed-bg); border: 1px solid var(--pots); }
+.whatif-top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-top: .5rem; }
+.whatif-top .hint { margin: 0; }
 .whatif-fields { display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
 .whatif-fields label { padding: .5rem; border-radius: 8px; border: 1px solid transparent; }
 .whatif-fields label.changed { background: var(--changed-bg); border-color: var(--pots); }
 .whatif-fields label > span:first-child { font-size: .85rem; }
 .whatif .plan { font-size: .78rem; }
 .card .note.was { font-style: italic; }
+.whatif-fields { margin-top: .75rem; }
