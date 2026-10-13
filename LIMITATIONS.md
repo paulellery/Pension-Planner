@@ -18,7 +18,7 @@ Everything the planner simplifies or leaves out, to review and pick from later. 
 | England, Wales & NI only. No Scottish rates. | ↕ | Add a region setting with Scottish bands. |
 | Every pension withdrawal is 25% tax free (like a UFPLS). There is no option to take the tax-free cash as one lump sum up front. | ↕ | Option per pension: lump sum at access age, or 25% of each withdrawal. |
 | No £268,275 cap on lifetime tax-free cash (the Lump Sum Allowance). | ⬆ for large pots | Track tax-free cash used per person; once it hits the cap, withdrawals are fully taxable. |
-| Cash savings are treated like ISAs: interest is untaxed. | ⬆ | Split ISAs from cash savings; tax interest above the Personal Savings Allowance. |
+| **Decision (for now):** all savings are treated as ISAs, so interest and withdrawals are untaxed. Cash savings outside an ISA would really be taxed on interest above the Personal Savings Allowance. | ⬆ small | If needed: separate cash savings type, tax interest above the PSA. |
 | No Marriage Allowance, dividend or savings allowances. | ⬇ slightly | Marriage Allowance only matters if one person's income is under £12,570. |
 | No National Insurance. That's fine while there's no earnings income (see Deferred). | — | Needed alongside earnings. |
 | Tax is minimised one year at a time, not across the whole retirement. It can use up ISAs early and then pay more tax later, or miss drawing extra pension at 0–20% in good years to save higher-rate tax later. | ⬇ | Smooth taxable income over the years, or let the user set a fixed amount to draw from pensions each year. |
@@ -41,9 +41,13 @@ Everything the planner simplifies or leaves out, to review and pick from later. 
 
 | Gap | Effect | Notes |
 |---|---|---|
-| Growth is a fixed real rate each year. No market ups and downs, so no sequence-of-returns risk (a crash early in retirement does lasting damage). | ⬆ | Simple stress test (e.g. −25% in the first retirement year) or Monte Carlo ranges. |
-| Inflation is ignored, so growth rates must be entered above inflation. Easy to enter a nominal rate by mistake. | ⬆ if misentered | Hint on the field, or enter nominal growth plus inflation separately. |
-| No separate fees. They have to be netted off the growth rate. | ⬆ if forgotten | Fee % per pot. |
+| Income, Total and Table use steady growth: the same real return every year, so they show no sequence-of-returns risk. The **Chances** tab covers this with random returns. | ⬆ on those tabs | — |
+| Chances: each year's return is independent. No slumps lasting several years beyond chance (2000–02), and no bounce-backs after crashes. | ↕ | Historical replay or a model with memory. |
+| Chances: returns are only mildly fat-tailed (Student-t, capped at about −55% in a year). Crashes are likelier than with a normal curve, but probably still rarer than history. | ⬆ slightly | Tune the tail or add an explicit crash probability. |
+| Chances: volatility is fixed at 16% (global equities) and isn't a setting. Sterling moves, which have softened global crashes for UK investors, are ignored. | ↕ | Make it a setting if the strategy changes. |
+| Chances: spending is fixed whatever markets do. Real people cut back after a crash, so results are a bit pessimistic. | ⬇ | Spending guardrails (cut target X% after a bad year). |
+| Inflation is ignored, so growth must be entered above inflation. Easy to enter a nominal rate by mistake. | ⬆ if misentered | Hinted on the field. |
+| One growth rate for every pot (all global index funds), after fees. Fee differences between platforms aren't modelled. | ↕ small | Fee % per pot if they differ a lot. |
 | Payments in are flat in today's money until retirement. No pay rises, no step changes, no stopping/starting. | ↕ | Escalation % or dated changes. |
 | ISA £20k a year allowance is not enforced. | ⬆ if exceeded | Warn above £20k/person/year. |
 | Withdrawals are split across a person's open pensions (and across all ISAs) in proportion to size. You can't choose which pot goes first. | ↕ | Draw order per pot. |

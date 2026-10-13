@@ -25,6 +25,7 @@
       <button type="button" role="tab" data-tab="income">Income</button>
       <button type="button" role="tab" data-tab="total">Total</button>
       <button type="button" role="tab" data-tab="table">Table</button>
+      <button type="button" role="tab" data-tab="chances">Chances</button>
     </nav>
 
     <div id="resultsHead" class="results-head">
@@ -34,7 +35,7 @@
           <span class="whatif-count" id="whatifCount" hidden></span>
         </summary>
         <div class="whatif-top">
-          <p class="hint">Try changes here without touching your details. They apply to the Income, Total and Table views.</p>
+          <p class="hint">Try changes here without touching your details. They apply to every view except Details.</p>
           <button type="button" id="whatifReset" hidden>Back to my plan</button>
         </div>
         <div class="whatif-fields">
@@ -78,7 +79,7 @@
 
         <section class="panel">
           <h2>ISAs &amp; savings</h2>
-          <p class="hint">Can be drawn from any time, so they bridge the gap until the pensions open. Payments in stop when the owner retires.</p>
+          <p class="hint">Can be drawn from any time, so they bridge the gap until the pensions open. All savings are treated as ISAs, so they are tax free. Payments in stop when the owner retires.</p>
           <div id="isas" class="items"></div>
           <button type="button" class="add" data-add="isas">+ Add ISA</button>
         </section>
@@ -92,8 +93,10 @@
         <section class="panel">
           <h2>Settings</h2>
           <div class="item">
+            <label>Investment growth %/yr <input type="number" id="growth" inputmode="decimal" step="0.1"></label>
             <label>Project until age <input type="number" id="endAge" min="50" max="120" step="1"></label>
           </div>
+          <p class="hint">Growth applies to every pension and ISA. Use a real rate (above inflation) after fees.</p>
         </section>
       </div>
     </div>
@@ -121,6 +124,32 @@
       </div>
       <div id="potChart" class="chart"></div>
     </section>
+
+    <div data-panel="chances" role="tabpanel" class="chances">
+      <section class="panel">
+        <h2>Range of outcomes</h2>
+        <p class="hint" id="mcIntro"></p>
+        <div id="mcSummary" class="summary"></div>
+      </section>
+      <section class="panel">
+        <h2>Total in pots</h2>
+        <div class="legend">
+          <span><i class="sw fan-outer"></i>Good to bad (8 in 10 runs)</span>
+          <span><i class="sw fan-inner"></i>Middle half</span>
+          <span><i class="sw line"></i>Typical</span>
+          <span><i class="sw plan"></i>Steady growth</span>
+        </div>
+        <div id="fanChart" class="chart"></div>
+      </section>
+      <section class="panel">
+        <h2>Chance the money is still lasting</h2>
+        <div class="legend" id="lastLegend" hidden>
+          <span><i class="sw line"></i>What if</span>
+          <span><i class="sw plan"></i>Your plan</span>
+        </div>
+        <div id="lastChart" class="chart"></div>
+      </section>
+    </div>
 
     <section class="panel" data-panel="table" role="tabpanel">
       <h2>Year by year</h2>

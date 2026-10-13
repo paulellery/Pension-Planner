@@ -100,6 +100,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .sw.db { background: var(--db); }
 .sw.pots { background: var(--pots); }
 .sw.isa { background: var(--isa); }
+.sw.fan-outer { background: var(--line); opacity: .15; }
+.sw.fan-inner { background: var(--line); opacity: .35; }
 .sw.tax { background: repeating-linear-gradient(45deg, var(--panel) 0 2px, var(--muted) 2px 3px); border: 1px solid var(--muted); }
 .sw.area { background: var(--line); opacity: .3; }
 .sw.line { height: 0; border-top: 2px solid var(--line); border-radius: 0; vertical-align: 3px; }
@@ -112,6 +114,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .chart .db { fill: var(--db); }
 .chart .pots { fill: var(--pots); }
 .chart .isa { fill: var(--isa); }
+.chart .fan-outer { fill: var(--line); opacity: .15; }
+.chart .fan-inner { fill: var(--line); opacity: .25; }
 .chart .tax { fill: url(#taxHatch); }
 .chart .tax-bg { fill: var(--panel); opacity: .75; }
 .chart .tax-stroke { stroke: var(--muted); stroke-width: 2; }
@@ -160,3 +164,5 @@ tr.short td.shortfall { color: var(--bad); font-weight: 600; }
 .whatif .plan { font-size: .78rem; }
 .card .note.was { font-style: italic; }
 .whatif-fields { margin-top: .75rem; }
+.chances { display: grid; gap: 1rem; }
+.chances .summary { margin-top: .5rem; }

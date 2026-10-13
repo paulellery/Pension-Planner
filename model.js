@@ -62,7 +62,8 @@
     return { fromPension, fromIsa, left: Math.max(0, left) };
   }
 
-  function simulate(data) {
+  // `returns`, if given, is one real return per year used for every pot instead of the fixed growth rate.
+  function simulate(data, returns) {
     const people = (data && data.people) || [];
     if (!people.length) return { rows: [], runOut: null, startYear: new Date().getFullYear() };
 
@@ -73,10 +74,12 @@
     const endAge = num(data.settings && data.settings.endAge, 100);
     const years = Math.max(0, Math.floor(endAge - startAge));
 
+    // One growth rate for every pot: they're all invested the same way.
+    const growthRate = num(data.settings && data.settings.growth, 5) / 100;
     const pot = (kind) => (p) => ({
       kind,
       owner: findPerson(p.ownerId),
-      growth: num(p.growth) / 100,
+      growth: growthRate,
       monthly: num(p.monthly),
       bal: Math.max(0, num(p.balance)),
       // Owner's age when a pension can first be drawn from. ISAs can be used any time.
@@ -164,7 +167,7 @@
           out = pensionAvailable[i] > 0 ? fromPension[i] * (p.bal + p.c) / pensionAvailable[i] : 0;
         }
         const net = p.c - out;
-        const g = (p.bal + net / 2) * p.growth;
+        const g = (p.bal + net / 2) * (returns ? returns[y] : p.growth);
         p.bal = Math.max(0, p.bal + net + g);
         growth += g;
         endTotal += p.bal;
@@ -211,7 +214,92 @@
     return { rows, runOut, gap, startYear };
   }
 
-  const api = { simulate, num, incomeTax };
+  // ---- Monte Carlo ----------------------------------------------------------
+  // Every pot is in global index funds, so one random market return per year applies to all of them.
+  // About 16% volatility. Shocks are fat-tailed (Student-t, 5 degrees of freedom, capped) so big falls
+  // come up more often than a normal curve gives. A fixed seed means the same 1,000 market histories
+  // every time, so numbers don't jump as you type and plan vs what-if compare like for like.
+  const VOLATILITY = 0.16;
+  const RUNS = 1000;
+  const histories = new Map();
+
+  function rng(seed) {
+    return function () {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function marketHistories(years, mean) {
+    const key = years + '|' + mean;
+    if (histories.has(key)) return histories.get(key);
+    const rand = rng(20261013);
+    const normal = () => Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
+    const fatTail = () => {
+      let chi = 0;
+      for (let k = 0; k < 5; k++) chi += normal() ** 2;
+      const z = (normal() / Math.sqrt(chi / 5)) * Math.sqrt(3 / 5);
+      return Math.max(-5, Math.min(5, z));
+    };
+    const s2 = Math.log(1 + (VOLATILITY / (1 + mean)) ** 2);
+    const mu = Math.log(1 + mean) - s2 / 2;
+    const out = [];
+    let sum = 0;
+    for (let i = 0; i < RUNS; i++) {
+      const run = [];
+      for (let y = 0; y <= years; y++) {
+        const r = Math.exp(mu + Math.sqrt(s2) * fatTail()) - 1;
+        run.push(r);
+        sum += r;
+      }
+      out.push(run);
+    }
+    // Rescale so the average year matches the growth setting exactly.
+    const adj = (1 + mean) / (1 + sum / (RUNS * (years + 1)));
+    for (const run of out) for (let y = 0; y < run.length; y++) run[y] = (1 + run[y]) * adj - 1;
+    histories.set(key, out);
+    return out;
+  }
+
+  function percentile(sorted, p) {
+    return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+  }
+
+  function monteCarlo(data) {
+    const base = simulate(data);
+    if (!base.rows.length) return null;
+    const years = base.rows.length - 1;
+    const runs = marketHistories(years, num(data.settings && data.settings.growth, 5) / 100);
+    const totals = base.rows.map(() => []);
+    const lasting = base.rows.map(() => 0);
+    const failAges = [];
+    for (const returns of runs) {
+      const { rows } = simulate(data, returns);
+      const fail = rows.findIndex((r) => r.shortfall > 0);
+      rows.forEach((r, y) => {
+        totals[y].push(r.endTotal);
+        if (fail === -1 || y < fail) lasting[y]++;
+      });
+      failAges.push(fail === -1 ? Infinity : rows[fail].age);
+    }
+    failAges.sort((a, b) => a - b);
+    const bands = totals.map((t) => {
+      t.sort((a, b) => a - b);
+      return { p10: percentile(t, 0.1), p25: percentile(t, 0.25), p50: percentile(t, 0.5), p75: percentile(t, 0.75), p90: percentile(t, 0.9) };
+    });
+    return {
+      rows: base.rows,
+      success: failAges.filter((a) => a === Infinity).length / runs.length,
+      badAge: percentile(failAges, 0.1),
+      typicalAge: percentile(failAges, 0.5),
+      bands,
+      lasting: lasting.map((n) => n / runs.length),
+    };
+  }
+
+  const api = { simulate, monteCarlo, num, incomeTax, VOLATILITY, RUNS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.PensionModel = api;
 })(this);
