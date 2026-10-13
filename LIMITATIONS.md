@@ -41,7 +41,11 @@ Everything the planner simplifies or leaves out, to review and pick from later. 
 
 | Gap | Effect | Notes |
 |---|---|---|
-| Growth is a fixed real rate each year. No market ups and downs, so no sequence-of-returns risk (a crash early in retirement does lasting damage). | ⬆ | Simple stress test (e.g. −25% in the first retirement year) or Monte Carlo ranges. |
+| Income, Total and Table use steady growth: the same real return every year, so they show no sequence-of-returns risk. The **Chances** tab covers this with random returns. | ⬆ on those tabs | — |
+| Chances: each year's return is independent. No slumps lasting several years beyond chance (2000–02), and no bounce-backs after crashes. | ↕ | Historical replay or a model with memory. |
+| Chances: returns are only mildly fat-tailed (Student-t, capped at about −55% in a year). Crashes are likelier than with a normal curve, but probably still rarer than history. | ⬆ slightly | Tune the tail or add an explicit crash probability. |
+| Chances: volatility is fixed at 16% (global equities) and isn't a setting. Sterling moves, which have softened global crashes for UK investors, are ignored. | ↕ | Make it a setting if the strategy changes. |
+| Chances: spending is fixed whatever markets do. Real people cut back after a crash, so results are a bit pessimistic. | ⬇ | Spending guardrails (cut target X% after a bad year). |
 | Inflation is ignored, so growth must be entered above inflation. Easy to enter a nominal rate by mistake. | ⬆ if misentered | Hinted on the field. |
 | One growth rate for every pot (all global index funds), after fees. Fee differences between platforms aren't modelled. | ↕ small | Fee % per pot if they differ a lot. |
 | Payments in are flat in today's money until retirement. No pay rises, no step changes, no stopping/starting. | ↕ | Escalation % or dated changes. |

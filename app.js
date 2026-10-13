@@ -2,7 +2,7 @@
   'use strict';
 
   const KEY = 'pension-planner:v1';
-  const { simulate, num } = window.PensionModel;
+  const { simulate, monteCarlo, num, VOLATILITY, RUNS } = window.PensionModel;
   const uid = () => Math.random().toString(36).slice(2, 10);
   const gbp = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 });
   const money = (v) => gbp.format(Math.round(v || 0));
@@ -149,13 +149,17 @@
 
   // ---- Tabs --------------------------------------------------------------
 
-  const TABS = ['details', 'income', 'total', 'table'];
+  const TABS = ['details', 'income', 'total', 'table', 'chances'];
+  let currentTab = 'details';
 
   function showTab(tab) {
     if (!TABS.includes(tab)) tab = 'details';
+    currentTab = tab;
+    if (tab === 'chances') renderChances();
     for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', b.dataset.tab === tab);
     for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== tab;
     document.getElementById('resultsHead').hidden = tab === 'details';
+    document.getElementById('summary').hidden = tab === 'chances';
   }
 
   document.querySelector('.tabs').addEventListener('click', (e) => {
@@ -323,6 +327,65 @@
     renderIncomeChart(rows, runOut);
     renderPotChart(rows, runOut, plan && plan.rows);
     renderTable(rows);
+    // Monte Carlo takes a few hundred ms, so only run it on its tab, once typing pauses.
+    clearTimeout(chancesTimer);
+    if (currentTab === 'chances') chancesTimer = setTimeout(renderChances, 250);
+  }
+
+  // ---- Chances (Monte Carlo) ---------------------------------------------
+
+  let chancesTimer;
+  const pct = (v) => Math.round(v * 100) + '%';
+  const lastsText = (age, endAge) => (age === Infinity ? `Lasts to ${endAge}` : `Runs out at ${age}`);
+
+  function renderChances() {
+    const shown = withWhatIf(state);
+    const mc = monteCarlo(shown);
+    const plan = hasWhatIf() ? monteCarlo(state) : null;
+    if (!mc) return;
+    const { rows, bands } = mc;
+    const endAge = rows[rows.length - 1].age;
+    const p1 = shown.people[0];
+    const ri = Math.max(0, rows.findIndex((r) => r.age >= num(p1.retireAge)));
+    const atRetire = ri > 0 ? bands[ri - 1] : { p10: rows[0].startTotal, p50: rows[0].startTotal, p90: rows[0].startTotal };
+
+    document.getElementById('mcIntro').textContent =
+      `${RUNS.toLocaleString()} runs of your plan, each with a different random sequence of market returns ` +
+      `(averaging ${num(shown.settings.growth, 5)}% a year after inflation, swinging about ${VOLATILITY * 100}% either way). ` +
+      'A run fails in the first year it can’t meet the target income, including any gap before pensions open. ' +
+      'Ups and downs cost more than they give back, so the typical run does worse than the steady growth used on the other tabs.';
+
+    const note = (now, was) => (plan && was !== now ? `<div class="note was">Plan: ${was}</div>` : '');
+    const tone = mc.success >= 0.8 ? ' good' : mc.success < 0.5 ? ' bad' : '';
+    document.getElementById('mcSummary').innerHTML = `
+      <div class="card${tone}"><div class="label">Chance the money lasts to ${endAge}</div>
+        <div class="value">${pct(mc.success)}</div>${note(pct(mc.success), plan && pct(plan.success))}</div>
+      <div class="card"><div class="label">Bad case (1 run in 10)</div>
+        <div class="value">${lastsText(mc.badAge, endAge)}</div>${note(lastsText(mc.badAge, endAge), plan && lastsText(plan.badAge, endAge))}</div>
+      <div class="card"><div class="label">Typical case</div>
+        <div class="value">${lastsText(mc.typicalAge, endAge)}</div>${note(lastsText(mc.typicalAge, endAge), plan && lastsText(plan.typicalAge, endAge))}</div>
+      <div class="card"><div class="label">Pots at ${esc(p1.name)}'s retirement (age ${rows[ri].age})</div>
+        <div class="value">${money(atRetire.p50)}</div>
+        <div class="note">Typical. Bad case ${money(atRetire.p10)}, good case ${money(atRetire.p90)}.</div></div>`;
+
+    // Scale to the middle half and steady growth; the lucky top of the fan is clipped rather than squashing the rest.
+    const fanMax = niceMax(Math.max(0, ...bands.map((b) => b.p75), ...rows.map((r) => r.endTotal)));
+    document.getElementById('fanChart').innerHTML = frame(rows, fanMax, null, ({ x, y, step }) => {
+      const pt = (i, v) => `${x(i) + step / 2},${y(Math.min(v, fanMax))}`;
+      const band = (lo, hi) => 'M' + bands.map((b, i) => pt(i, b[hi])).join('L') + 'L' + bands.map((b, i) => pt(i, b[lo])).reverse().join('L') + 'Z';
+      const line = (vals) => 'M' + vals.map((v, i) => pt(i, v)).join('L');
+      const tips = rows.map((r, i) => `<rect x="${x(i)}" width="${step}" y="${M.t}" height="${H - M.t - M.b}" fill="transparent"><title>Age ${r.age}: typical ${money(bands[i].p50)}, bad case ${money(bands[i].p10)}, good case ${money(bands[i].p90)}, steady growth ${money(r.endTotal)}</title></rect>`).join('');
+      return `<path class="fan-outer" d="${band('p10', 'p90')}"/><path class="fan-inner" d="${band('p25', 'p75')}"/>
+        <path class="plan-line" d="${line(rows.map((r) => r.endTotal))}"/><path class="line" d="${line(bands.map((b) => b.p50))}"/>${tips}`;
+    });
+
+    document.getElementById('lastLegend').hidden = !plan;
+    document.getElementById('lastChart').innerHTML = frame(rows, 1, null, ({ x, y, step }) => {
+      const line = (vals) => 'M' + vals.map((v, i) => `${x(i) + step / 2},${y(v)}`).join('L');
+      const area = line(mc.lasting) + `L${x(rows.length - 1) + step / 2},${y(0)}L${x(0) + step / 2},${y(0)}Z`;
+      const tips = rows.map((r, i) => `<rect x="${x(i)}" width="${step}" y="${M.t}" height="${H - M.t - M.b}" fill="transparent"><title>Age ${r.age}: still lasting in ${pct(mc.lasting[i])} of runs${plan ? ` (plan ${pct(plan.lasting[i])})` : ''}</title></rect>`).join('');
+      return `<path class="area" d="${area}"/>${plan ? `<path class="plan-line" d="${line(plan.lasting)}"/>` : ''}<path class="line" d="${line(mc.lasting)}"/>${tips}`;
+    }, pct);
   }
 
   const gapText = (g) => (g.fromAge === g.toAge ? `Age ${g.fromAge}` : `Ages ${g.fromAge}–${g.toAge}`);
@@ -398,7 +461,7 @@
     if (v >= 1e3) return '£' + +(v / 1e3).toFixed(1) + 'k';
     return '£' + v;
   }
-  function frame(rows, max, runOut, body) {
+  function frame(rows, max, runOut, body, fmt = shortMoney) {
     const iw = W - M.l - M.r, ih = H - M.t - M.b;
     const n = rows.length;
     const step = iw / Math.max(n, 1);
@@ -408,7 +471,7 @@
     for (let k = 0; k <= 4; k++) {
       const v = (max * k) / 4;
       grid += `<line class="grid-line" x1="${M.l}" x2="${W - M.r}" y1="${y(v)}" y2="${y(v)}"/>
-               <text x="${M.l - 6}" y="${y(v) + 4}" text-anchor="end">${shortMoney(v)}</text>`;
+               <text x="${M.l - 6}" y="${y(v) + 4}" text-anchor="end">${fmt(v)}</text>`;
     }
     rows.forEach((r, i) => {
       if (r.age % 5 === 0) grid += `<text x="${x(i) + step / 2}" y="${H - 8}" text-anchor="middle">${r.age}</text>`;

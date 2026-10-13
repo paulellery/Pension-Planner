@@ -14,9 +14,11 @@ It shows when the money runs out: the first year the pots can't make up the gap 
 
 Before a pension's access age it is locked: it keeps growing, but nothing is drawn from it. ISAs and savings bridge the years until then. The Income chart, Total chart and Table show pensions and ISAs separately. If they can't cover the target while money is still locked, the summary shows a **gap before pensions open** separately from the money running out.
 
-The page has four tabs: **Details** (everything above), **Income** (income each year), **Total** (total in pots) and **Table** (year by year).
+The page has five tabs: **Details** (everything above), **Income** (income each year), **Total** (total in pots), **Table** (year by year) and **Chances**.
 
-The Income, Total and Table tabs share a collapsible **What if** panel (closed by default, with a badge showing how many changes are active) for trying changes without editing your details:
+The first four use steady growth: the same return every year. **Chances** runs the plan 1,000 times with random market returns, averaging the growth setting with about 16% volatility (global index funds). One return per year applies to every pot, since they're all invested the same way. Returns are slightly fat-tailed, so big falls come up more often than a normal curve gives, and a fixed seed keeps the results steady between edits. It shows the chance the money lasts to the end age, the bad case (1 run in 10) and typical run-out ages, a fan chart of the total in pots, and the chance the money is still lasting at each age. A run fails at the first shortfall, including a gap before pensions open.
+
+Every tab except Details shares a collapsible **What if** panel (closed by default, with a badge showing how many changes are active) for trying changes without editing your details:
 
 - **Target income** for the first age band.
 - **% change to monthly pension payments**, applied to every pension (not ISAs).
